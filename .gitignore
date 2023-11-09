@@ -1,0 +1,9 @@
+# dependencies
+node_modules/
+
+# build output files
+build/
+dist/
+esm/
+types/
+src/require.js
