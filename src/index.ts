@@ -1,4 +1,5 @@
-import { dirname, join } from 'path';
+#!/usr/bin/env node
+import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { transformCode } from './worker.js';
