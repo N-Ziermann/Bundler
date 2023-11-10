@@ -29,16 +29,9 @@ type PackageJsonContent = {
 };
 
 function main() {
-  const root = join(
-    dirname(fileURLToPath(import.meta.url)),
-    '../',
-    config.sourceDirectory
-  );
-  const nodeModulesPath = join(
-    dirname(fileURLToPath(import.meta.url)),
-    '../',
-    'node_modules'
-  );
+  const currentWorkingDirectory = process.cwd();
+  const root = join(currentWorkingDirectory, config.sourceDirectory);
+  const nodeModulesPath = join(currentWorkingDirectory, 'node_modules');
 
   let moduleCounter = 0;
   const seenModules = new Set<string>();
