@@ -1,13 +1,22 @@
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync, writeFileSync } from 'fs';
+import { transformCode } from './worker.js';
 
 const config = {
   entryPoint: 'index.js',
   sourceDirectory: '/example',
   extensions: ['.js'],
   outputFile: 'out.js',
+  babelPlugins: [
+    '@babel/plugin-transform-modules-commonjs',
+    '@babel/plugin-transform-typescript',
+  ],
 }; // todo use readFileSync to read config file
+
+// todo: try to optimize fileReading and compilation with mutliThreading
+// todo: allow importing node_modules
+// todo: add support for extensions like '.ts' as dependencies
 
 type ModuleMetadata = {
   code: string;
@@ -39,10 +48,11 @@ function main() {
     }
     seenModules.add(module);
     const code = readFileSync(module, 'utf-8');
-    const dependencyMap = getDependencies(module, code);
+    const compiledCode = transformCode(code, config.babelPlugins);
+    const dependencyMap = getDependencies(module, compiledCode);
     const metadata: ModuleMetadata = {
       dependencyMap,
-      code,
+      code: compiledCode,
       id: moduleCounter++,
     };
     modules.set(module, metadata);
@@ -78,8 +88,13 @@ function main() {
     output.push(wrapModule(id, code));
   }
   output.unshift(
-    // todo: currently .ts => compile step needed
-    readFileSync(join(fileURLToPath(import.meta.url), '../require.ts'), 'utf8')
+    transformCode(
+      readFileSync(
+        join(fileURLToPath(import.meta.url), '../require.ts'),
+        'utf8'
+      ),
+      config.babelPlugins
+    )
   );
   output.push('requireModule(0);');
   // todo outputFile currently doesnt automatically create a dir if set to something like /build/out.js

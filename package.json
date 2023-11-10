@@ -10,7 +10,13 @@
   "author": "N-Ziermann",
   "license": "MIT",
   "devDependencies": {
+    "@types/babel__core": "^7.20.4",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@babel/core": "^7.23.3",
+    "@babel/plugin-transform-modules-commonjs": "^7.23.3",
+    "@babel/plugin-transform-typescript": "^7.23.3"
   }
 }

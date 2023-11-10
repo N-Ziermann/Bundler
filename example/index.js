@@ -1,5 +1,5 @@
-const { singleton } = require('./singleton');
-const { stuff } = require('./stuff');
+import { singleton } from './singleton';
+import { stuff } from './stuff';
 
 singleton.printHello();
 singleton.printStuff();

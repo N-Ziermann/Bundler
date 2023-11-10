@@ -6,4 +6,4 @@ build/
 dist/
 esm/
 types/
-src/require.js
+out.js
