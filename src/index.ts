@@ -50,7 +50,9 @@ function main() {
   while (queue.length > 0) {
     const moduleEntry = queue.shift();
     if (!moduleEntry) {
-      throw new Error('Should never happen');
+      throw new Error(
+        'Dependecies could not be processed. (If you are seing this error something went wrong inside the bundler)'
+      );
     }
     const module = getModulePath(moduleEntry.name, moduleEntry.path);
     if (!module || seenModules.has(module)) {
@@ -89,7 +91,7 @@ function main() {
     for (const [dependencyName, dependencyPath] of dependencyMap) {
       const dependency = modules.get(dependencyPath);
       if (!dependency) {
-        throw new Error('should never happen');
+        throw new Error(`No dependency found for path "${dependencyPath}"`);
       }
       // replace all dependecies of the current module with their dependency-id
       code = code.replace(
