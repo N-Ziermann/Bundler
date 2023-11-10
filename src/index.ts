@@ -16,6 +16,8 @@ const DEFAULT_CONFIG = {
     ],
   },
 };
+
+type Config = typeof DEFAULT_CONFIG;
 // todo: try to optimize fileReading and compilation with mutliThreading
 // todo: general code cleanup
 
@@ -32,7 +34,7 @@ type PackageJsonContent = {
 function main() {
   const currentWorkingDirectory = process.cwd();
   const configPath = join(currentWorkingDirectory, 'bundler.json');
-  const config = existsSync(configPath)
+  const config: Config = existsSync(configPath)
     ? JSON.parse(readFileSync(configPath, 'utf-8'))
     : DEFAULT_CONFIG;
   const root = join(currentWorkingDirectory, config.sourceDirectory);
@@ -57,7 +59,7 @@ function main() {
     }
     seenModules.add(module);
     const code = readFileSync(module, 'utf-8');
-    const compiledCode = transformCode(code, config.babelPlugins);
+    const compiledCode = transformCode(code, config.babelConfig);
     const dependencyMap = getDependencies(module, compiledCode);
     const metadata: ModuleMetadata = {
       dependencyMap,
@@ -107,7 +109,7 @@ function main() {
         join(fileURLToPath(import.meta.url), '../require.js'),
         'utf8'
       ),
-      config.babelPlugins
+      config.babelConfig
     )
   );
   output.push('requireModule(0);');
