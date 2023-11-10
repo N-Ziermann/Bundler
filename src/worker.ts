@@ -1,5 +1,5 @@
-import { transformSync } from '@babel/core';
+import { TransformOptions, transformSync } from '@babel/core';
 
-export function transformCode(code: string, babelPlugins: string[]) {
-  return transformSync(code, { plugins: babelPlugins })?.code ?? code;
+export function transformCode(code: string, babelConfig: TransformOptions) {
+  return transformSync(code, babelConfig)?.code ?? code;
 }

@@ -9,12 +9,13 @@ const DEFAULT_CONFIG = {
   sourceDirectory: '/example',
   extensions: ['.js', '.ts'],
   outputFile: 'out.js',
-  babelPlugins: [
-    '@babel/plugin-transform-modules-commonjs',
-    '@babel/plugin-transform-typescript',
-  ],
+  babelConfig: {
+    plugins: [
+      '@babel/plugin-transform-modules-commonjs',
+      '@babel/plugin-transform-typescript',
+    ],
+  },
 };
-// todo: wont work with nodeJS built in modules yet
 // todo: try to optimize fileReading and compilation with mutliThreading
 // todo: general code cleanup
 
