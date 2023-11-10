@@ -1,12 +1,12 @@
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { transformCode } from './worker.js';
 
 const config = {
   entryPoint: 'index.js',
   sourceDirectory: '/example',
-  extensions: ['.js'],
+  extensions: ['.js', '.ts'],
   outputFile: 'out.js',
   babelPlugins: [
     '@babel/plugin-transform-modules-commonjs',
@@ -16,7 +16,8 @@ const config = {
 
 // todo: try to optimize fileReading and compilation with mutliThreading
 // todo: allow importing node_modules
-// todo: add support for extensions like '.ts' as dependencies
+// todo: turn into module that you can actually run
+// todo: improve error messages
 
 type ModuleMetadata = {
   code: string;
@@ -56,13 +57,17 @@ function main() {
       id: moduleCounter++,
     };
     modules.set(module, metadata);
-    // todo: extensions are currently limited to .js
-    [...dependencyMap.keys()].forEach((dep) =>
-      queue.push({
-        path: join(module, '../'),
-        name: addExtensionIfMissing(dep, '.js'),
-      })
-    );
+    [...dependencyMap.keys()].forEach((dep) => {
+      const currentPath = join(module, '../');
+      return queue.push({
+        path: currentPath,
+        name: addExtensionToImportIfMissing(
+          dep,
+          config.extensions,
+          currentPath
+        ),
+      });
+    });
   }
 
   function wrapModule(id: number, code: string) {
@@ -103,6 +108,7 @@ function main() {
 main();
 
 function getDependencies(path: string, code: string): Map<string, string> {
+  const currentPath = join(path, '../');
   const dependencyMap = new Map<string, string>();
   const regex = /require\(["'](.*)["']\)/g;
   const matchLists = [...code.matchAll(regex)].map((matches) =>
@@ -112,17 +118,29 @@ function getDependencies(path: string, code: string): Map<string, string> {
     matchList.forEach((match) =>
       dependencyMap.set(
         match,
-        join(path, '../', addExtensionIfMissing(match, '.js'))
+        join(
+          currentPath,
+          addExtensionToImportIfMissing(match, config.extensions, currentPath)
+        )
       )
     )
   );
-  // todo: extensions are currently limited to .js
   return dependencyMap;
 }
 
-function addExtensionIfMissing(path: string, extension: string) {
-  if (path.endsWith(extension)) {
-    return path;
+function addExtensionToImportIfMissing(
+  importPath: string,
+  extensions: string[],
+  currentPath: string
+) {
+  if (extensions.some((extension) => importPath.endsWith(extension))) {
+    return importPath;
   }
-  return path + extension;
+  for (const extension of extensions) {
+    const completePath = join(currentPath, importPath) + extension;
+    if (existsSync(completePath)) {
+      return importPath + extension;
+    }
+  }
+  throw new Error(`No module called '${importPath}' was found`);
 }
