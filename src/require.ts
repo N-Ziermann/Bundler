@@ -19,7 +19,7 @@ function requireModule(name: string): unknown {
   moduleCache.set(name, module);
   const factory = modules.get(name);
   if (!factory) {
-    throw new Error('Should never happen');
+    throw new Error(`Unable to require module "${name}"`);
   }
   factory(module, module.exports, requireModule);
   return module.exports;

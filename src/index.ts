@@ -15,14 +15,18 @@ const config = {
 }; // todo use readFileSync to read config file
 
 // todo: try to optimize fileReading and compilation with mutliThreading
-// todo: allow importing node_modules
 // todo: turn into module that you can actually run
 // todo: improve error messages
+// todo: general code cleanup
 
 type ModuleMetadata = {
   code: string;
   dependencyMap: Map<string, string>; // Map<dependencyName, dependencyPath>
   id: number;
+};
+
+type PackageJsonContent = {
+  main: string;
 };
 
 function main() {
@@ -31,19 +35,24 @@ function main() {
     '../',
     config.sourceDirectory
   );
+  const nodeModulesPath = join(
+    dirname(fileURLToPath(import.meta.url)),
+    '../',
+    'node_modules'
+  );
 
   let moduleCounter = 0;
   const seenModules = new Set<string>();
   const modules = new Map<string, ModuleMetadata>();
   const queue: { path: string; name: string }[] = [
-    { path: root, name: config.entryPoint },
+    { path: root, name: `./${config.entryPoint}` },
   ];
   while (queue.length > 0) {
     const moduleEntry = queue.shift();
     if (!moduleEntry) {
       throw new Error('Should never happen');
     }
-    const module = join(moduleEntry.path, moduleEntry.name);
+    const module = getModulePath(moduleEntry.name, moduleEntry.path);
     if (!module || seenModules.has(module)) {
       continue;
     }
@@ -104,43 +113,77 @@ function main() {
   output.push('requireModule(0);');
   // todo outputFile currently doesnt automatically create a dir if set to something like /build/out.js
   writeFileSync(config.outputFile, output.join('\n'));
-}
-main();
 
-function getDependencies(path: string, code: string): Map<string, string> {
-  const currentPath = join(path, '../');
-  const dependencyMap = new Map<string, string>();
-  const regex = /require\(["'](.*)["']\)/g;
-  const matchLists = [...code.matchAll(regex)].map((matches) =>
-    matches?.filter((match) => !match.includes('require('))
-  );
-  matchLists.forEach((matchList) =>
-    matchList.forEach((match) =>
-      dependencyMap.set(
-        match,
-        join(
-          currentPath,
-          addExtensionToImportIfMissing(match, config.extensions, currentPath)
-        )
-      )
-    )
-  );
-  return dependencyMap;
-}
-
-function addExtensionToImportIfMissing(
-  importPath: string,
-  extensions: string[],
-  currentPath: string
-) {
-  if (extensions.some((extension) => importPath.endsWith(extension))) {
-    return importPath;
+  function getDependencies(path: string, code: string): Map<string, string> {
+    const currentPath = join(path, '../');
+    const dependencyMap = new Map<string, string>();
+    const regex = /require\(["'](.*)["']\)/g;
+    const matchLists = [...code.matchAll(regex)].map((matches) =>
+      matches?.filter((match) => !match.includes('require('))
+    );
+    matchLists.forEach((matchList) =>
+      matchList.forEach((match) => {
+        const isNodeModule = !isRelativePath(match);
+        if (isNodeModule) {
+          const modulePath = getModulePath(match, currentPath);
+          return dependencyMap.set(match, modulePath);
+        }
+        return dependencyMap.set(
+          match,
+          join(
+            currentPath,
+            addExtensionToImportIfMissing(match, config.extensions, currentPath)
+          )
+        );
+      })
+    );
+    return dependencyMap;
   }
-  for (const extension of extensions) {
-    const completePath = join(currentPath, importPath) + extension;
-    if (existsSync(completePath)) {
-      return importPath + extension;
+
+  function addExtensionToImportIfMissing(
+    importPath: string,
+    extensions: string[],
+    currentPath: string
+  ) {
+    const isNodeModule = !isRelativePath(importPath);
+    if (
+      isNodeModule ||
+      extensions.some((extension) => importPath.endsWith(extension))
+    ) {
+      return importPath;
     }
+    for (const extension of extensions) {
+      const completePath = join(currentPath, importPath) + extension;
+      if (existsSync(completePath)) {
+        return importPath + extension;
+      }
+    }
+    throw new Error(`No module called '${importPath}' was found`);
   }
-  throw new Error(`No module called '${importPath}' was found`);
+
+  function isRelativePath(path: string) {
+    return path.startsWith('.');
+  }
+
+  function getModulePath(moduleName: string, currentPath: string): string {
+    if (isRelativePath(moduleName)) {
+      return join(
+        currentPath,
+        addExtensionToImportIfMissing(
+          moduleName,
+          config.extensions,
+          currentPath
+        )
+      );
+    }
+    const path = join(nodeModulesPath, moduleName);
+    const packageFileContent = readFileSync(join(path, 'package.json'), 'utf8');
+    const packageFileJSON = JSON.parse(
+      packageFileContent
+    ) as PackageJsonContent;
+    const moduleEntryPoint = packageFileJSON.main;
+    return join(nodeModulesPath, moduleName, moduleEntryPoint);
+  }
 }
+
+main();
