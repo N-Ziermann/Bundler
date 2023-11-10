@@ -5,7 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "ts-node --esm src/index.ts"
+    "start": "ts-node --esm src/index.ts",
+    "lint:types": "tsc --noEmit",
+    "build": "tsc"
   },
   "author": "N-Ziermann",
   "license": "MIT",

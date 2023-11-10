@@ -12,11 +12,10 @@ const config = {
     '@babel/plugin-transform-modules-commonjs',
     '@babel/plugin-transform-typescript',
   ],
-}; // todo use readFileSync to read config file
-
+};
+// todo use readFileSync to read a config file
 // todo: try to optimize fileReading and compilation with mutliThreading
 // todo: turn into module that you can actually run
-// todo: improve error messages
 // todo: general code cleanup
 
 type ModuleMetadata = {

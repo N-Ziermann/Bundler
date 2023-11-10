@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "lib": ["ESNext"],
+    "target": "ES6",
+    "module": "NodeNext",
+    "lib": [],
     "allowJs": false,
     "outDir": "build",
     "rootDir": "src",
