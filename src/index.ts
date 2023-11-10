@@ -14,9 +14,7 @@ const DEFAULT_CONFIG = {
   ],
 };
 // todo: wont work with nodeJS built in modules yet
-// todo use readFileSync to read a config file
 // todo: try to optimize fileReading and compilation with mutliThreading
-// todo: turn into module that you can actually run
 // todo: general code cleanup
 
 type ModuleMetadata = {
