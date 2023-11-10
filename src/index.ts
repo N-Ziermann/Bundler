@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { transformCode } from './worker.js';
 
-const config = {
+const DEFAULT_CONFIG = {
   entryPoint: 'index.js',
   sourceDirectory: '/example',
   extensions: ['.js', '.ts'],
@@ -13,6 +13,7 @@ const config = {
     '@babel/plugin-transform-typescript',
   ],
 };
+// todo: wont work with nodeJS built in modules yet
 // todo use readFileSync to read a config file
 // todo: try to optimize fileReading and compilation with mutliThreading
 // todo: turn into module that you can actually run
@@ -30,6 +31,10 @@ type PackageJsonContent = {
 
 function main() {
   const currentWorkingDirectory = process.cwd();
+  const configPath = join(currentWorkingDirectory, 'bundler.json');
+  const config = existsSync(configPath)
+    ? JSON.parse(readFileSync(configPath, 'utf-8'))
+    : DEFAULT_CONFIG;
   const root = join(currentWorkingDirectory, config.sourceDirectory);
   const nodeModulesPath = join(currentWorkingDirectory, 'node_modules');
 
@@ -98,7 +103,8 @@ function main() {
   output.unshift(
     transformCode(
       readFileSync(
-        join(fileURLToPath(import.meta.url), '../require.ts'),
+        // todo: use require.ts in dev and .js in build
+        join(fileURLToPath(import.meta.url), '../require.js'),
         'utf8'
       ),
       config.babelPlugins

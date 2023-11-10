@@ -2,12 +2,21 @@
   "name": "bundler",
   "version": "1.0.0",
   "description": "Self written JavaScript bundler",
-  "main": "index.js",
   "type": "module",
+  "main": "build/index.js",
+  "bin": "build/index.js",
   "scripts": {
     "start": "ts-node --esm src/index.ts",
     "lint:types": "tsc --noEmit",
     "build": "tsc"
+  },
+  "keywords": [
+    "personal",
+    "bundler"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/N-Ziermann/bundler.git"
   },
   "author": "N-Ziermann",
   "license": "MIT",
@@ -15,9 +24,12 @@
     "@types/babel__core": "^7.20.4",
     "react": "^18.2.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "@babel/core": "^7.23.3",
+    "@babel/plugin-transform-modules-commonjs": "^7.23.3",
+    "@babel/plugin-transform-typescript": "^7.23.3"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@babel/core": "^7.23.3",
     "@babel/plugin-transform-modules-commonjs": "^7.23.3",
     "@babel/plugin-transform-typescript": "^7.23.3"
