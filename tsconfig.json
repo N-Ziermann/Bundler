@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "ES6",
+    "target": "ES2022",
     "module": "NodeNext",
-    "lib": [],
+    "lib": ["es2022"],
     "allowJs": false,
     "outDir": "build",
     "rootDir": "src",

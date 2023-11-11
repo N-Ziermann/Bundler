@@ -19,6 +19,7 @@ const DEFAULT_CONFIG = {
 
 type Config = typeof DEFAULT_CONFIG;
 // todo: try to optimize fileReading and compilation with mutliThreading
+// todo outputFile currently doesnt automatically create a dir if set to something like /build/out.js
 // todo: general code cleanup
 
 type ModuleMetadata = {
@@ -93,9 +94,10 @@ function main() {
         throw new Error(`No dependency found for path "${dependencyPath}"`);
       }
       // replace all dependecies of the current module with their dependency-id
-      code = code.replace(
+      code = code.replaceAll(
         new RegExp(
-          `require\\(('|")${dependencyName.replace(/[\/.]/g, '\\$&')}\\1\\)`
+          `require\\(('|")${dependencyName.replace(/[\/.]/g, '\\$&')}\\1\\)`,
+          'g'
         ),
         `require(${dependency.id})`
       );
@@ -112,14 +114,16 @@ function main() {
       config.babelConfig
     )
   );
+  output.unshift(
+    "const exports = {};\nconst process = { env: { NODE_ENV: 'PRODUCTION' } };"
+  );
   output.push('requireModule(0);');
-  // todo outputFile currently doesnt automatically create a dir if set to something like /build/out.js
   writeFileSync(config.outputFile, output.join('\n'));
 
   function getDependencies(path: string, code: string): Map<string, string> {
     const currentPath = join(path, '../');
     const dependencyMap = new Map<string, string>();
-    const regex = /require\(["'](.*)["']\)/g;
+    const regex = /require\(["']([^"']*)["']\)/g;
     const matchLists = [...code.matchAll(regex)].map((matches) =>
       matches?.filter((match) => !match.includes('require('))
     );
