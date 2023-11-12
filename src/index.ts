@@ -21,6 +21,9 @@ type Config = typeof DEFAULT_CONFIG;
 // todo: try to optimize fileReading and compilation with mutliThreading
 // todo outputFile currently doesnt automatically create a dir if set to something like /build/out.js
 // todo: general code cleanup
+// todo: asset loading (css, png, svg) [configurable in config file]
+// todo: support for imports object in package.json
+// todo: eslint
 
 type ModuleMetadata = {
   code: string;
@@ -28,8 +31,25 @@ type ModuleMetadata = {
   id: number;
 };
 
+type TypeSpecificExportImportEntry = {
+  'node-addons'?: string | null;
+  node?: string | null;
+  deno?: string | null;
+  worker?: string | null;
+  browser?: string | null;
+  import?: string | null;
+  require?: string | null;
+  development?: string | null;
+  production?: string | null;
+  default?: string | null;
+};
+type ExportEntry =
+  | string
+  | { [key: string]: null | string | TypeSpecificExportImportEntry };
+
 type PackageJsonContent = {
-  main: string;
+  main?: string;
+  exports?: ExportEntry;
 };
 
 function main() {
@@ -182,13 +202,136 @@ function main() {
         )
       );
     }
-    const path = join(nodeModulesPath, moduleName);
+    const moduleNameParts = moduleName.split('/');
+    const moduleNameRelevantForPath = moduleNameParts[0].startsWith('@')
+      ? moduleNameParts[0] + '/' + moduleNameParts[1]
+      : moduleNameParts[0];
+    const restOfModuleName = moduleName
+      .replace(moduleNameRelevantForPath, '')
+      .trim();
+    const path = join(nodeModulesPath, moduleNameRelevantForPath);
     const packageFileContent = readFileSync(join(path, 'package.json'), 'utf8');
     const packageFileJSON = JSON.parse(
       packageFileContent
     ) as PackageJsonContent;
-    const moduleEntryPoint = packageFileJSON.main;
-    return join(nodeModulesPath, moduleName, moduleEntryPoint);
+    let moduleEntryPoint: string | undefined;
+    if (restOfModuleName) {
+      const exportName = `.${restOfModuleName}`;
+      moduleEntryPoint = resolveExports(packageFileJSON.exports, exportName);
+    } else {
+      let entryPoint = packageFileJSON.main;
+      if (!entryPoint) {
+        entryPoint = resolveExports(packageFileJSON.exports, '.');
+      }
+      moduleEntryPoint = entryPoint;
+    }
+    if (!moduleEntryPoint) {
+      throw new Error('No entrypoint found for ' + moduleName);
+    }
+    return join(nodeModulesPath, moduleNameRelevantForPath, moduleEntryPoint);
+  }
+
+  function resolveExports(
+    exports: PackageJsonContent['exports'],
+    subPath: string
+  ): string | undefined {
+    if (!exports) {
+      return undefined;
+    }
+    if (typeof exports === 'string') {
+      return exports;
+    }
+    const exportEntryKeyList = Object.keys(exports).reverse();
+
+    const matchingEntryKey =
+      exportEntryKeyList.find(
+        (entryKey) =>
+          entryKey === subPath ||
+          (entryKey.includes('*') &&
+            subPath.matchAll(convertMatchingStringToRegex(entryKey)))
+      ) ?? '';
+    const regexMatches = matchingEntryKey.includes('*') && [
+      ...subPath.matchAll(convertMatchingStringToRegex(matchingEntryKey)),
+    ];
+    let exportEntry = exports[matchingEntryKey];
+    if (!exportEntry) {
+      return;
+    }
+    if (typeof exportEntry === 'string') {
+      if (regexMatches) {
+        exportEntry = replaceExportEntryPlaceholders(exportEntry, regexMatches);
+      }
+      return exportEntry ?? undefined;
+    }
+    const exportsByPriority = [
+      exportEntry.browser,
+      exportEntry.require,
+      exportEntry.production,
+      exportEntry.default,
+    ];
+    let highestPriorityExport = exportsByPriority.find(Boolean);
+    if (!highestPriorityExport) {
+      return;
+    }
+    if (regexMatches) {
+      highestPriorityExport = replaceExportEntryPlaceholders(
+        highestPriorityExport,
+        regexMatches
+      );
+    }
+    return highestPriorityExport;
+  }
+
+  function replaceExportEntryPlaceholders(
+    entry: string,
+    regexMatches: RegExpMatchArray[]
+  ): string {
+    let entryCopy = entry;
+    let regexMatchStrings: string[] = [];
+    [...regexMatches].forEach((match) =>
+      [...match].map((matchString) => regexMatchStrings.push(matchString))
+    );
+    regexMatchStrings.forEach((str, index) => {
+      if (index !== 0) {
+        entryCopy = entryCopy.replace('*', str);
+      }
+    });
+    return entryCopy;
+  }
+
+  /**
+   * Converts a string like ./*.js into a regex that matches that * pattern
+   */
+  function convertMatchingStringToRegex(matchingString: string): RegExp {
+    // this excludes the * as it is escaped seperately
+    const regexCharsToEscape = [
+      '.',
+      '/',
+      '+',
+      '?',
+      '[',
+      '^',
+      ']',
+      '$',
+      '(',
+      ')',
+      '{',
+      '}',
+      '=',
+      '!',
+      '<',
+      '>',
+      '|',
+      ':',
+      '-',
+    ] as const;
+    let regexString = matchingString;
+    regexCharsToEscape.forEach((char) => {
+      regexString = regexString.replaceAll(char, `\\${char}`);
+    });
+    regexString = regexString.replaceAll('*', '(.*)');
+    regexString = `^${regexString}$`;
+    return new RegExp(regexString, 'g');
   }
 }
 
