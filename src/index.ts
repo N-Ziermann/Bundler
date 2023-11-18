@@ -10,14 +10,9 @@ import {
   transformCode,
 } from './shared.js';
 
-// todo outputFile currently doesnt automatically create a dir if set to something like /build/out.js
 // todo: general code cleanup
-/* todo: asset loading (css, png, svg) [configurable in config file]
-    => if (extension in resourceExtensions) {
-      create file in build folder with uuid as name
-      let the "module" return a default export thats just the path to that resource
-    }
-*/
+// todo: public folder that gets merged into the build folder
+// todo: asset loading from css imports (import "./index.css") [needs custom configurable loader?]
 // todo: support for imports object in package.json
 // todo: eslint
 // todo: create sample project that uses react & typescript & that imports some css and pngs
@@ -47,7 +42,7 @@ async function main() {
   const currentWorkingDirectory = process.cwd();
   const configPath = join(currentWorkingDirectory, 'bundler.json');
   const config: Config = existsSync(configPath)
-    ? JSON.parse(readFileSync(configPath, 'utf-8'))
+    ? { ...DEFAULT_CONFIG, ...JSON.parse(readFileSync(configPath, 'utf-8')) }
     : DEFAULT_CONFIG;
   const root = join(currentWorkingDirectory, config.sourceDirectory);
   const nodeModulesPath = join(currentWorkingDirectory, 'node_modules');
@@ -79,6 +74,9 @@ async function main() {
     };
     modules.set(module, metadata);
     [...dependencyMap.keys()].forEach((dep) => {
+      if (config.assetExtensions.some((ex) => dep.endsWith(ex))) {
+        return;
+      }
       const currentPath = join(module, '../');
       return queue.push({
         path: currentPath,
@@ -137,6 +135,9 @@ async function main() {
         if (isNodeModule) {
           const modulePath = getModulePath(match, currentPath);
           return dependencyMap.set(match, modulePath);
+        }
+        if (config.assetExtensions.some((ex) => match.endsWith(ex))) {
+          return dependencyMap.set(match, join(currentPath, match));
         }
         return dependencyMap.set(
           match,
