@@ -24,6 +24,7 @@ type Config = typeof DEFAULT_CONFIG;
 // todo: asset loading (css, png, svg) [configurable in config file]
 // todo: support for imports object in package.json
 // todo: eslint
+// todo: create sample project that uses react & typescript & that imports some css and pngs
 
 type ModuleMetadata = {
   code: string;
@@ -80,11 +81,10 @@ function main() {
     }
     seenModules.add(module);
     const code = readFileSync(module, 'utf-8');
-    const compiledCode = transformCode(code, config.babelConfig);
-    const dependencyMap = getDependencies(module, compiledCode);
+    const dependencyMap = getDependencies(module, code);
     const metadata: ModuleMetadata = {
       dependencyMap,
-      code: compiledCode,
+      code: code,
       id: moduleCounter++,
     };
     modules.set(module, metadata);
@@ -105,25 +105,44 @@ function main() {
     return `define(${id}, function(module, exports, require) {\n${code}});`;
   }
 
-  const output: string[] = [];
+  const unwrappedOutput: {
+    code: string;
+    id: number;
+    afterTransform: (transformedCode: string) => string;
+  }[] = [];
   for (const [module, metadata] of Array.from(modules).reverse()) {
-    let { code, id, dependencyMap } = metadata;
-    for (const [dependencyName, dependencyPath] of dependencyMap) {
-      const dependency = modules.get(dependencyPath);
-      if (!dependency) {
-        throw new Error(`No dependency found for path "${dependencyPath}"`);
+    const afterTransform = (transformedCode: string) => {
+      let { dependencyMap } = metadata;
+      for (const [dependencyName, dependencyPath] of dependencyMap) {
+        const dependency = modules.get(dependencyPath);
+        if (!dependency) {
+          throw new Error(`No dependency found for path "${dependencyPath}"`);
+        }
+        // replace all dependecies of the current module with their dependency-id
+        transformedCode = transformedCode.replaceAll(
+          new RegExp(
+            `require\\(('|")${dependencyName.replace(/[\/.]/g, '\\$&')}\\1\\)`,
+            'g'
+          ),
+          `require(${dependency.id})`
+        );
       }
-      // replace all dependecies of the current module with their dependency-id
-      code = code.replaceAll(
-        new RegExp(
-          `require\\(('|")${dependencyName.replace(/[\/.]/g, '\\$&')}\\1\\)`,
-          'g'
-        ),
-        `require(${dependency.id})`
-      );
-    }
-    output.push(wrapModule(id, code));
+      return transformedCode;
+    };
+    unwrappedOutput.push({
+      code: metadata.code,
+      id: metadata.id,
+      afterTransform,
+    });
   }
+  // todo: do this multithreaded with workers
+  const output: string[] = unwrappedOutput.map(
+    ({ code, id, afterTransform }) => {
+      const transformedCode = transformCode(code, config.babelConfig);
+      const optimizedCode = afterTransform(transformedCode);
+      return wrapModule(id, optimizedCode);
+    }
+  );
   output.unshift(
     transformCode(
       readFileSync(
@@ -143,10 +162,15 @@ function main() {
   function getDependencies(path: string, code: string): Map<string, string> {
     const currentPath = join(path, '../');
     const dependencyMap = new Map<string, string>();
-    const regex = /require\(["']([^"']*)["']\)/g;
-    const matchLists = [...code.matchAll(regex)].map((matches) =>
+    const importRegex = /import [^"']*["']([^"']*)["']/g;
+    const importMatchLists = [...code.matchAll(importRegex)].map((matches) =>
+      matches?.filter((match) => !match.match(/["']/))
+    );
+    const requireRegex = /require\(["']([^"']*)["']\)/g;
+    const requireMatchLists = [...code.matchAll(requireRegex)].map((matches) =>
       matches?.filter((match) => !match.includes('require('))
     );
+    const matchLists = [...requireMatchLists, ...importMatchLists];
     matchLists.forEach((matchList) =>
       matchList.forEach((match) => {
         const isNodeModule = !isRelativePath(match);
