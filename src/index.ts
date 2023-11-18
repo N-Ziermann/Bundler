@@ -10,7 +10,6 @@ import {
   transformCode,
 } from './shared.js';
 
-// todo: try to optimize fileReading and compilation with mutliThreading
 // todo outputFile currently doesnt automatically create a dir if set to something like /build/out.js
 // todo: general code cleanup
 // todo: asset loading (css, png, svg) [configurable in config file]
@@ -91,15 +90,12 @@ async function main() {
       .reverse()
       .map(([module, metadata]) => runWorker(metadata, modules, config))
   );
+  let requireFilePath = join(fileURLToPath(import.meta.url), '../require.ts');
+  if (!existsSync(requireFilePath)) {
+    requireFilePath = join(fileURLToPath(import.meta.url), '../require.js');
+  }
   output.unshift(
-    transformCode(
-      readFileSync(
-        // todo: use require.ts in dev and .js in build
-        join(fileURLToPath(import.meta.url), '../require.js'),
-        'utf8'
-      ),
-      config.babelConfig
-    )
+    transformCode(readFileSync(requireFilePath, 'utf8'), config.babelConfig)
   );
   output.unshift(
     "const exports = {};\nconst process = { env: { NODE_ENV: 'PRODUCTION' } };"
