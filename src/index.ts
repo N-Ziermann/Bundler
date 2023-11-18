@@ -2,22 +2,14 @@
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { transformCode } from './worker.js';
+import { Worker } from 'worker_threads';
+import {
+  Config,
+  DEFAULT_CONFIG,
+  ModuleMetadata,
+  transformCode,
+} from './shared.js';
 
-const DEFAULT_CONFIG = {
-  entryPoint: 'index.js',
-  sourceDirectory: '/example',
-  extensions: ['.js', '.ts'],
-  outputFile: 'out.js',
-  babelConfig: {
-    plugins: [
-      '@babel/plugin-transform-modules-commonjs',
-      '@babel/plugin-transform-typescript',
-    ],
-  },
-};
-
-type Config = typeof DEFAULT_CONFIG;
 // todo: try to optimize fileReading and compilation with mutliThreading
 // todo outputFile currently doesnt automatically create a dir if set to something like /build/out.js
 // todo: general code cleanup
@@ -25,12 +17,6 @@ type Config = typeof DEFAULT_CONFIG;
 // todo: support for imports object in package.json
 // todo: eslint
 // todo: create sample project that uses react & typescript & that imports some css and pngs
-
-type ModuleMetadata = {
-  code: string;
-  dependencyMap: Map<string, string>; // Map<dependencyName, dependencyPath>
-  id: number;
-};
 
 type TypeSpecificExportImportEntry = {
   'node-addons'?: string | null;
@@ -53,7 +39,7 @@ type PackageJsonContent = {
   exports?: ExportEntry;
 };
 
-function main() {
+async function main() {
   const currentWorkingDirectory = process.cwd();
   const configPath = join(currentWorkingDirectory, 'bundler.json');
   const config: Config = existsSync(configPath)
@@ -100,48 +86,10 @@ function main() {
       });
     });
   }
-
-  function wrapModule(id: number, code: string) {
-    return `define(${id}, function(module, exports, require) {\n${code}});`;
-  }
-
-  const unwrappedOutput: {
-    code: string;
-    id: number;
-    afterTransform: (transformedCode: string) => string;
-  }[] = [];
-  for (const [module, metadata] of Array.from(modules).reverse()) {
-    const afterTransform = (transformedCode: string) => {
-      let { dependencyMap } = metadata;
-      for (const [dependencyName, dependencyPath] of dependencyMap) {
-        const dependency = modules.get(dependencyPath);
-        if (!dependency) {
-          throw new Error(`No dependency found for path "${dependencyPath}"`);
-        }
-        // replace all dependecies of the current module with their dependency-id
-        transformedCode = transformedCode.replaceAll(
-          new RegExp(
-            `require\\(('|")${dependencyName.replace(/[\/.]/g, '\\$&')}\\1\\)`,
-            'g'
-          ),
-          `require(${dependency.id})`
-        );
-      }
-      return transformedCode;
-    };
-    unwrappedOutput.push({
-      code: metadata.code,
-      id: metadata.id,
-      afterTransform,
-    });
-  }
-  // todo: do this multithreaded with workers
-  const output: string[] = unwrappedOutput.map(
-    ({ code, id, afterTransform }) => {
-      const transformedCode = transformCode(code, config.babelConfig);
-      const optimizedCode = afterTransform(transformedCode);
-      return wrapModule(id, optimizedCode);
-    }
+  const output = await Promise.all(
+    Array.from(modules)
+      .reverse()
+      .map(([module, metadata]) => runWorker(metadata, modules, config))
   );
   output.unshift(
     transformCode(
@@ -356,6 +304,26 @@ function main() {
     regexString = regexString.replaceAll('*', '(.*)');
     regexString = `^${regexString}$`;
     return new RegExp(regexString, 'g');
+  }
+
+  async function runWorker(
+    metadata: ModuleMetadata,
+    modules: Map<string, ModuleMetadata>,
+    config: Config
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const worker = new Worker(
+        join(fileURLToPath(import.meta.url), '../worker.js')
+      );
+      worker.postMessage({ metadata, modules, config });
+      worker.on('message', (returnValue) => {
+        resolve(returnValue);
+      });
+      worker.on('error', (e) => {
+        console.error(e);
+        reject();
+      });
+    });
   }
 }
 
