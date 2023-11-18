@@ -5,7 +5,7 @@ import { transformSync } from '@babel/core';
  *  entryPoint: String,
  *  sourceDirectory: String,
  *  extensions: String[],
- *  outputFile: String,
+ *  outputDirectory: String,
  *  babelConfig: Object,
  * }} Config
  */
@@ -35,7 +35,7 @@ export const DEFAULT_CONFIG = {
   entryPoint: 'index.js',
   sourceDirectory: '/example',
   extensions: ['.js', '.ts'],
-  outputFile: 'out.js',
+  outputDirectory: 'dist',
   babelConfig: {
     plugins: [
       '@babel/plugin-transform-modules-commonjs',

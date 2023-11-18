@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { join } from 'path';
 import { fileURLToPath } from 'url';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { Worker } from 'worker_threads';
 import {
   Config,
@@ -12,7 +12,12 @@ import {
 
 // todo outputFile currently doesnt automatically create a dir if set to something like /build/out.js
 // todo: general code cleanup
-// todo: asset loading (css, png, svg) [configurable in config file]
+/* todo: asset loading (css, png, svg) [configurable in config file]
+    => if (extension in resourceExtensions) {
+      create file in build folder with uuid as name
+      let the "module" return a default export thats just the path to that resource
+    }
+*/
 // todo: support for imports object in package.json
 // todo: eslint
 // todo: create sample project that uses react & typescript & that imports some css and pngs
@@ -101,7 +106,18 @@ async function main() {
     "const exports = {};\nconst process = { env: { NODE_ENV: 'PRODUCTION' } };"
   );
   output.push('requireModule(0);');
-  writeFileSync(config.outputFile, output.join('\n'));
+  createFileWithContent(config.outputDirectory, 'index.js', output.join('\n'));
+
+  function createFileWithContent(
+    path: string,
+    filename: string,
+    content: string
+  ) {
+    if (!existsSync(path)) {
+      mkdirSync(path, { recursive: true });
+    }
+    writeFileSync(join(path, filename), content);
+  }
 
   function getDependencies(path: string, code: string): Map<string, string> {
     const currentPath = join(path, '../');
