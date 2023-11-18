@@ -1,6 +1,6 @@
 {
   "name": "@ziermann/bundler",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Self written JavaScript bundler",
   "type": "module",
   "main": "build/index.js",
