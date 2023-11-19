@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 type Module = { exports: unknown };
 
 type ModuleFactory = (
   module: Module,
-  exports: any,
-  require: (path: string) => unknown
-) => {};
+  exports: unknown,
+  require: (path: string) => unknown,
+) => void;
 
 type ModuleName = string;
 

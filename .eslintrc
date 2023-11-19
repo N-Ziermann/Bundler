@@ -1,0 +1,26 @@
+{
+  "env": {
+    "browser": false,
+    "es2022": true
+  },
+  "extends": [
+    "airbnb",
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "warn",
+    "no-use-before-define": "off",
+    "no-continue": "off",
+    "function-paren-newline": "off",
+    "implicit-arrow-linebreak": "off",
+    "no-restricted-syntax": "off",
+    "object-curly-newline": "off",
+    "operator-linebreak": "off",
+    "consistent-return": "off",
+    "no-plusplus": "off",
+    "@typescript-eslint/no-unused-vars": "off",
+    "import/extensions": "off",
+    "import/prefer-default-export": "off"
+  }
+}

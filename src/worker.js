@@ -1,23 +1,23 @@
 import { parentPort } from 'worker_threads';
-import { transformCode } from './shared.js';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { transformSync } from '@babel/core';
 
 /**
- * @typedef {{
- *  metadata: ./shared.js/ModuleMetadata,
- *  modules: Map<string, ModuleMetadata>,
- *  config: ./shared.js/Config
- * }} MessagePayload
+ * @typedef { {
+ *  metadata: import("./shared.d.ts").ModuleMetadata
+ *  modules: Map<string, import("./shared.d.ts").ModuleMetadata>
+ *  config: import("./shared.d.ts").Config
+ * } } MessagePayload
  */
 
 /**
  * @param { MessagePayload } payload
  */
 function onmessage(payload) {
-  // todo: jsdoc types currently dont work properly
   const { metadata, modules, config } = payload;
-  let { dependencyMap, code, id } = metadata;
+  const { dependencyMap, id } = metadata;
+  let { code } = metadata;
 
   code = transformCode(code, config.babelConfig);
 
@@ -25,7 +25,7 @@ function onmessage(payload) {
     const dependency = modules.get(dependencyPath);
     if (config.assetExtensions.some((ex) => dependencyPath.endsWith(ex))) {
       const extension = config.assetExtensions.find((ex) =>
-        dependencyPath.endsWith(ex)
+        dependencyPath.endsWith(ex),
       );
       // todo use uuid instead of random number
       const newFileName = `${Math.random() * 10000}${extension}`;
@@ -33,10 +33,10 @@ function onmessage(payload) {
       writeFileSync(join(config.outputDirectory, newFileName), fileContent);
       code = code.replaceAll(
         new RegExp(
-          `require\\(('|")${dependencyName.replace(/[\/.]/g, '\\$&')}\\1\\)`,
-          'g'
+          `require\\(('|")${dependencyName.replace(/[/.]/g, '\\$&')}\\1\\)`,
+          'g',
         ),
-        `"/${newFileName}"`
+        `"/${newFileName}"`,
       );
       continue;
     }
@@ -46,10 +46,10 @@ function onmessage(payload) {
     // replace all dependecies of the current module with their dependency-id
     code = code.replaceAll(
       new RegExp(
-        `require\\(('|")${dependencyName.replace(/[\/.]/g, '\\$&')}\\1\\)`,
-        'g'
+        `require\\(('|")${dependencyName.replace(/[/.]/g, '\\$&')}\\1\\)`,
+        'g',
       ),
-      `require(${dependency.id})`
+      `require(${dependency.id})`,
     );
   }
   code = wrapModule(id, code);
@@ -67,4 +67,14 @@ parentPort?.on('message', onmessage);
  */
 function wrapModule(id, code) {
   return `define(${id}, function(module, exports, require) {\n${code}});`;
+}
+
+/**
+ *
+ * @param { String } code
+ * @param { import("@babel/core/").TransformOptions } babelConfig
+ * @returns { String }
+ */
+export function transformCode(code, babelConfig) {
+  return transformSync(code, babelConfig)?.code ?? code;
 }

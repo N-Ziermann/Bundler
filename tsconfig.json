@@ -4,7 +4,7 @@
     "module": "NodeNext",
     "lib": ["es2022"],
     "allowJs": true,
-    "checkJs": false,
+    "checkJs": true,
     "outDir": "build",
     "rootDir": "src",
     "strict": true,

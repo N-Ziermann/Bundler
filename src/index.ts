@@ -3,19 +3,28 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { Worker } from 'worker_threads';
-import {
-  Config,
-  DEFAULT_CONFIG,
-  ModuleMetadata,
-  transformCode,
-} from './shared.js';
+import type { Config, ModuleMetadata } from './shared.js';
+import { transformCode } from './worker.js';
 
 // todo: general code cleanup
 // todo: public folder that gets merged into the build folder
 // todo: asset loading from css imports (import "./index.css") [needs custom configurable loader?]
 // todo: support for imports object in package.json
-// todo: eslint
 // todo: create sample project that uses react & typescript & that imports some css and pngs
+
+const DEFAULT_CONFIG = {
+  entryPoint: 'index.js',
+  sourceDirectory: '/example',
+  extensions: ['.js', '.ts'],
+  assetExtensions: ['.png'],
+  outputDirectory: 'dist',
+  babelConfig: {
+    plugins: [
+      '@babel/plugin-transform-modules-commonjs',
+      '@babel/plugin-transform-typescript',
+    ],
+  },
+} satisfies Config;
 
 type TypeSpecificExportImportEntry = {
   'node-addons'?: string | null;
@@ -57,7 +66,7 @@ async function main() {
     const moduleEntry = queue.shift();
     if (!moduleEntry) {
       throw new Error(
-        'Dependecies could not be processed. (If you are seing this error something went wrong inside the bundler)'
+        'Dependecies could not be processed. (If you are seing this error something went wrong inside the bundler)',
       );
     }
     const module = getModulePath(moduleEntry.name, moduleEntry.path);
@@ -69,7 +78,7 @@ async function main() {
     const dependencyMap = getDependencies(module, code);
     const metadata: ModuleMetadata = {
       dependencyMap,
-      code: code,
+      code,
       id: moduleCounter++,
     };
     modules.set(module, metadata);
@@ -83,7 +92,7 @@ async function main() {
         name: addExtensionToImportIfMissing(
           dep,
           config.extensions,
-          currentPath
+          currentPath,
         ),
       });
     });
@@ -91,17 +100,17 @@ async function main() {
   const output = await Promise.all(
     Array.from(modules)
       .reverse()
-      .map(([module, metadata]) => runWorker(metadata, modules, config))
+      .map(([_, metadata]) => runWorker(metadata, modules, config)),
   );
   let requireFilePath = join(fileURLToPath(import.meta.url), '../require.ts');
   if (!existsSync(requireFilePath)) {
     requireFilePath = join(fileURLToPath(import.meta.url), '../require.js');
   }
   output.unshift(
-    transformCode(readFileSync(requireFilePath, 'utf8'), config.babelConfig)
+    transformCode(readFileSync(requireFilePath, 'utf8'), config.babelConfig),
   );
   output.unshift(
-    "const exports = {};\nconst process = { env: { NODE_ENV: 'PRODUCTION' } };"
+    "const exports = {};\nconst process = { env: { NODE_ENV: 'PRODUCTION' } };",
   );
   output.push('requireModule(0);');
   createFileWithContent(config.outputDirectory, 'index.js', output.join('\n'));
@@ -109,7 +118,7 @@ async function main() {
   function createFileWithContent(
     path: string,
     filename: string,
-    content: string
+    content: string,
   ) {
     if (!existsSync(path)) {
       mkdirSync(path, { recursive: true });
@@ -121,12 +130,12 @@ async function main() {
     const currentPath = join(path, '../');
     const dependencyMap = new Map<string, string>();
     const importRegex = /import [^"']*["']([^"']*)["']/g;
-    const importMatchLists = [...code.matchAll(importRegex)].map((matches) =>
-      matches?.filter((match) => !match.match(/["']/))
+    const importMatchLists = [...code.matchAll(importRegex)].map(
+      (matches) => matches?.filter((match) => !match.match(/["']/)),
     );
     const requireRegex = /require\(["']([^"']*)["']\)/g;
-    const requireMatchLists = [...code.matchAll(requireRegex)].map((matches) =>
-      matches?.filter((match) => !match.includes('require('))
+    const requireMatchLists = [...code.matchAll(requireRegex)].map(
+      (matches) => matches?.filter((match) => !match.includes('require(')),
     );
     const matchLists = [...requireMatchLists, ...importMatchLists];
     matchLists.forEach((matchList) =>
@@ -143,10 +152,14 @@ async function main() {
           match,
           join(
             currentPath,
-            addExtensionToImportIfMissing(match, config.extensions, currentPath)
-          )
+            addExtensionToImportIfMissing(
+              match,
+              config.extensions,
+              currentPath,
+            ),
+          ),
         );
-      })
+      }),
     );
     return dependencyMap;
   }
@@ -154,7 +167,7 @@ async function main() {
   function addExtensionToImportIfMissing(
     importPath: string,
     extensions: string[],
-    currentPath: string
+    currentPath: string,
   ) {
     const isNodeModule = !isRelativePath(importPath);
     if (
@@ -183,13 +196,13 @@ async function main() {
         addExtensionToImportIfMissing(
           moduleName,
           config.extensions,
-          currentPath
-        )
+          currentPath,
+        ),
       );
     }
     const moduleNameParts = moduleName.split('/');
     const moduleNameRelevantForPath = moduleNameParts[0].startsWith('@')
-      ? moduleNameParts[0] + '/' + moduleNameParts[1]
+      ? `${moduleNameParts[0]}/${moduleNameParts[1]}`
       : moduleNameParts[0];
     const restOfModuleName = moduleName
       .replace(moduleNameRelevantForPath, '')
@@ -197,7 +210,7 @@ async function main() {
     const path = join(nodeModulesPath, moduleNameRelevantForPath);
     const packageFileContent = readFileSync(join(path, 'package.json'), 'utf8');
     const packageFileJSON = JSON.parse(
-      packageFileContent
+      packageFileContent,
     ) as PackageJsonContent;
     let moduleEntryPoint: string | undefined;
     if (restOfModuleName) {
@@ -211,14 +224,14 @@ async function main() {
       moduleEntryPoint = entryPoint;
     }
     if (!moduleEntryPoint) {
-      throw new Error('No entrypoint found for ' + moduleName);
+      throw new Error(`No entrypoint found for ${moduleName}`);
     }
     return join(nodeModulesPath, moduleNameRelevantForPath, moduleEntryPoint);
   }
 
   function resolveExports(
     exports: PackageJsonContent['exports'],
-    subPath: string
+    subPath: string,
   ): string | undefined {
     if (!exports) {
       return undefined;
@@ -233,7 +246,7 @@ async function main() {
         (entryKey) =>
           entryKey === subPath ||
           (entryKey.includes('*') &&
-            subPath.matchAll(convertMatchingStringToRegex(entryKey)))
+            subPath.matchAll(convertMatchingStringToRegex(entryKey))),
       ) ?? '';
     const regexMatches = matchingEntryKey.includes('*') && [
       ...subPath.matchAll(convertMatchingStringToRegex(matchingEntryKey)),
@@ -261,7 +274,7 @@ async function main() {
     if (regexMatches) {
       highestPriorityExport = replaceExportEntryPlaceholders(
         highestPriorityExport,
-        regexMatches
+        regexMatches,
       );
     }
     return highestPriorityExport;
@@ -269,12 +282,12 @@ async function main() {
 
   function replaceExportEntryPlaceholders(
     entry: string,
-    regexMatches: RegExpMatchArray[]
+    regexMatches: RegExpMatchArray[],
   ): string {
     let entryCopy = entry;
-    let regexMatchStrings: string[] = [];
+    const regexMatchStrings: string[] = [];
     [...regexMatches].forEach((match) =>
-      [...match].map((matchString) => regexMatchStrings.push(matchString))
+      [...match].map((matchString) => regexMatchStrings.push(matchString)),
     );
     regexMatchStrings.forEach((str, index) => {
       if (index !== 0) {
@@ -318,26 +331,27 @@ async function main() {
     regexString = `^${regexString}$`;
     return new RegExp(regexString, 'g');
   }
+}
 
-  async function runWorker(
-    metadata: ModuleMetadata,
-    modules: Map<string, ModuleMetadata>,
-    config: Config
-  ): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const worker = new Worker(
-        join(fileURLToPath(import.meta.url), '../worker.js')
-      );
-      worker.postMessage({ metadata, modules, config });
-      worker.on('message', (returnValue) => {
-        resolve(returnValue);
-      });
-      worker.on('error', (e) => {
-        console.error(e);
-        reject();
-      });
+async function runWorker(
+  metadata: ModuleMetadata,
+  modules: Map<string, ModuleMetadata>,
+  config: Config,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(
+      join(fileURLToPath(import.meta.url), '../worker.js'),
+    );
+    worker.postMessage({ metadata, modules, config });
+    worker.on('message', (returnValue) => {
+      resolve(returnValue);
     });
-  }
+    worker.on('error', (e) => {
+      // eslint-disable-next-line no-console
+      console.error(e);
+      reject();
+    });
+  });
 }
 
 main();
