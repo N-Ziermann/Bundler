@@ -4,6 +4,7 @@ type dependencyPath = string;
 export type Config = {
   entryPoint: string;
   sourceDirectory: string;
+  publicDirectory: string;
   extensions: string[];
   assetExtensions: string[];
   outputDirectory: string;

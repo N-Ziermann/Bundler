@@ -1,15 +1,20 @@
 #!/usr/bin/env node
 import { join } from 'path';
 import { fileURLToPath } from 'url';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  cpSync,
+  rmdirSync,
+} from 'fs';
 import { Worker } from 'worker_threads';
 import type { Config, ModuleMetadata } from './shared.js';
 import { transformCode } from './worker.js';
 
 // todo: general code cleanup
-// todo: public folder that gets merged into the build folder
 // todo: asset loading from css imports (import "./index.css") [needs custom configurable loader?]
-// todo: support for imports object in package.json
 // todo: create sample project that uses react & typescript & that imports some css and pngs
 
 const DEFAULT_CONFIG = {
@@ -18,6 +23,7 @@ const DEFAULT_CONFIG = {
   extensions: ['.js', '.ts'],
   assetExtensions: ['.png'],
   outputDirectory: 'dist',
+  publicDirectory: 'public',
   babelConfig: {
     plugins: [
       '@babel/plugin-transform-modules-commonjs',
@@ -55,6 +61,11 @@ async function main() {
     : DEFAULT_CONFIG;
   const root = join(currentWorkingDirectory, config.sourceDirectory);
   const nodeModulesPath = join(currentWorkingDirectory, 'node_modules');
+
+  if (existsSync(config.outputDirectory)) {
+    rmdirSync(config.outputDirectory, { recursive: true });
+  }
+  mkdirSync(config.outputDirectory, { recursive: true });
 
   let moduleCounter = 0;
   const seenModules = new Set<string>();
@@ -113,18 +124,8 @@ async function main() {
     "const exports = {};\nconst process = { env: { NODE_ENV: 'PRODUCTION' } };",
   );
   output.push('requireModule(0);');
-  createFileWithContent(config.outputDirectory, 'index.js', output.join('\n'));
-
-  function createFileWithContent(
-    path: string,
-    filename: string,
-    content: string,
-  ) {
-    if (!existsSync(path)) {
-      mkdirSync(path, { recursive: true });
-    }
-    writeFileSync(join(path, filename), content);
-  }
+  writeFileSync(join(config.outputDirectory, 'index.js'), output.join('\n'));
+  copyPublicFilesToOutputDirectory(config);
 
   function getDependencies(path: string, code: string): Map<string, string> {
     const currentPath = join(path, '../');
@@ -352,6 +353,12 @@ async function runWorker(
       reject();
     });
   });
+}
+
+function copyPublicFilesToOutputDirectory(config: Config) {
+  if (existsSync(config.publicDirectory)) {
+    cpSync(config.publicDirectory, config.outputDirectory, { recursive: true });
+  }
 }
 
 main();
