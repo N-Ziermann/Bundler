@@ -7,3 +7,9 @@ dist/
 esm/
 types/
 out.js
+
+# tooling
+.turbo
+
+# other
+.DS_Store

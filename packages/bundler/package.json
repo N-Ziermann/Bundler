@@ -1,0 +1,42 @@
+{
+  "name": "@ziermann/bundler",
+  "version": "1.0.9",
+  "description": "Self written JavaScript bundler",
+  "type": "module",
+  "bin": "cli.js",
+  "scripts": {
+    "start": "tsc && node cli.js",
+    "lint": "eslint src",
+    "lint:types": "tsc --noEmit",
+    "build": "tsc "
+  },
+  "keywords": [
+    "personal",
+    "bundler"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/N-Ziermann/bundler.git"
+  },
+  "author": "N-Ziermann",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.23.3",
+    "@babel/plugin-transform-modules-commonjs": "^7.23.3",
+    "@babel/plugin-transform-typescript": "^7.23.3",
+    "@types/babel__core": "^7.20.4",
+    "@types/shelljs": "^0.8.15",
+    "@typescript-eslint/eslint-plugin": "^6.11.0",
+    "@typescript-eslint/parser": "^6.11.0",
+    "eslint": "^8.54.0",
+    "eslint-config-airbnb": "^19.0.4"
+  },
+  "peerDependencies": {
+    "@babel/core": "^7.23.3",
+    "@babel/plugin-transform-modules-commonjs": "^7.23.3",
+    "@babel/plugin-transform-typescript": "^7.23.3"
+  },
+  "dependencies": {
+    "shelljs": "^0.8.5"
+  }
+}

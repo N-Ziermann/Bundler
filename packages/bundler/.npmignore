@@ -1,0 +1,14 @@
+# folders
+src/
+node_modules/
+.turbo/
+dist/
+build/
+
+# dotfiles & config files
+.*
+.github/
+tsconfig.json
+
+# dev files
+bundler.json

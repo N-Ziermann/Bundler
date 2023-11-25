@@ -5,37 +5,25 @@ on:
   workflow_dispatch:
 
 jobs:
-  NPM:
+  publish:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
       - uses: actions/setup-node@v3
         with:
-          node-version: 19
-          registry-url: https://registry.npmjs.org/
+          node-version: 19.x
+          cache: 'pnpm'
 
-      - name: setup git config
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "<>"
-
-      - name: Dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Increase version
-        run: npm version patch
-
-      - name: Save version
-        id: version
-        run: echo ::set-output name=tag::$(echo $(node -p -e "require('./package.json').version"))
-
-      - name: Push new version
-        run: git push
-
-      - name: Publish on NPM
-        run: npm publish --access public
+      - run: pnpm install --frozen-lockfile
+      - name: Create Release Pull Request or Publish
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          publish: pnpm run publish-packages
         env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,15 @@
+{
+  "entryPoint": "src/index.tsx",
+  "sourceDirectory": ".",
+  "extensions": [".jsx", ".tsx", ".js", ".ts"],
+  "outputDirectory": "build",
+  "assetExtensions": [".png"],
+  "babelConfig": {
+    "presets": [
+      "@babel/preset-react",
+      ["@babel/preset-typescript", { "isTSX": true, "allExtensions": true }]
+    ],
+    "plugins": ["@babel/plugin-transform-modules-commonjs"]
+  },
+  "publicDirecotry": "public"
+}

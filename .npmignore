@@ -1,9 +1,0 @@
-#folders
-src/
-node_modules/
-example/
-
-#dotfiles & config files
-.*
-.github/
-tsconfig.json

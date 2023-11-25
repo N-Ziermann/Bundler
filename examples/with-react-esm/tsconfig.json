@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["./src"],
+  "compilerOptions": {
+    "outDir": "./build",
+    "lib": ["ES2021", "DOM"],
+    "types": ["./types.d.ts"],
+    "jsx": "react"
+  }
+}

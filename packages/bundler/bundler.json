@@ -1,0 +1,15 @@
+{
+  "entryPoint": "src/index.tsx",
+  "sourceDirectory": "../../examples/with-react-esm",
+  "extensions": [".jsx", ".tsx", ".js", ".ts"],
+  "outputDirectory": "dist",
+  "assetExtensions": [".png"],
+  "babelConfig": {
+    "presets": [
+      "@babel/preset-react",
+      ["@babel/preset-typescript", { "isTSX": true, "allExtensions": true }]
+    ],
+    "plugins": ["@babel/plugin-transform-modules-commonjs"]
+  },
+  "publicDirecotry": "public"
+}

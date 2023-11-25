@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import {
@@ -10,16 +9,29 @@ import {
   rmdirSync,
 } from 'fs';
 import { Worker } from 'worker_threads';
+import shell from 'shelljs';
 import type { Config, ModuleMetadata } from './shared.js';
 import { transformCode } from './worker.js';
 
 // todo: general code cleanup
-// todo: asset loading from css imports (import "./index.css") [needs custom configurable loader?]
+/*
+todo: asset loading from css imports (import "./index.css")
+  => all imports to the file should be removed during compilation
+    and this should be added to the build:
+
+  const css = readFileSync(...)
+  return `
+    const styleTag = document.createElement("style");
+    styleTag.innerHTML = ${css};
+    document.body.append(styleTag)
+  `
+*/
 // todo: create sample project that uses react & typescript & that imports some css and pngs
 
 const DEFAULT_CONFIG = {
   entryPoint: 'index.js',
-  sourceDirectory: '/example',
+  // todo: rename into "projectRoot" (most of the time this will just be .)
+  sourceDirectory: 'src',
   extensions: ['.js', '.ts'],
   assetExtensions: ['.png'],
   outputDirectory: 'dist',
@@ -53,14 +65,14 @@ type PackageJsonContent = {
   exports?: ExportEntry;
 };
 
-async function main() {
+export async function main() {
   const currentWorkingDirectory = process.cwd();
   const configPath = join(currentWorkingDirectory, 'bundler.json');
   const config: Config = existsSync(configPath)
     ? { ...DEFAULT_CONFIG, ...JSON.parse(readFileSync(configPath, 'utf-8')) }
     : DEFAULT_CONFIG;
   const root = join(currentWorkingDirectory, config.sourceDirectory);
-  const nodeModulesPath = join(currentWorkingDirectory, 'node_modules');
+  // const nodeModulesPath = join(currentWorkingDirectory, 'node_modules');
 
   if (existsSync(config.outputDirectory)) {
     rmdirSync(config.outputDirectory, { recursive: true });
@@ -125,7 +137,7 @@ async function main() {
   );
   output.push('requireModule(0);');
   writeFileSync(join(config.outputDirectory, 'index.js'), output.join('\n'));
-  copyPublicFilesToOutputDirectory(config);
+  copyPublicFilesToOutputDirectory(config, root);
 
   function getDependencies(path: string, code: string): Map<string, string> {
     const currentPath = join(path, '../');
@@ -208,7 +220,8 @@ async function main() {
     const restOfModuleName = moduleName
       .replace(moduleNameRelevantForPath, '')
       .trim();
-    const path = join(nodeModulesPath, moduleNameRelevantForPath);
+    const path =
+      getDependencyLocationSimple(moduleNameRelevantForPath, root) ?? '';
     const packageFileContent = readFileSync(join(path, 'package.json'), 'utf8');
     const packageFileJSON = JSON.parse(
       packageFileContent,
@@ -227,7 +240,7 @@ async function main() {
     if (!moduleEntryPoint) {
       throw new Error(`No entrypoint found for ${moduleName}`);
     }
-    return join(nodeModulesPath, moduleNameRelevantForPath, moduleEntryPoint);
+    return join(path, moduleEntryPoint);
   }
 
   function resolveExports(
@@ -355,10 +368,31 @@ async function runWorker(
   });
 }
 
-function copyPublicFilesToOutputDirectory(config: Config) {
-  if (existsSync(config.publicDirectory)) {
-    cpSync(config.publicDirectory, config.outputDirectory, { recursive: true });
+function copyPublicFilesToOutputDirectory(config: Config, root: string) {
+  const dir = join(root, config.publicDirectory);
+  if (existsSync(dir)) {
+    cpSync(dir, config.outputDirectory, { recursive: true });
   }
 }
 
-main();
+const dependencyLocationMap: Map<string, string> = new Map();
+export function getDependencyLocationSimple(
+  name: string,
+  rootPath: string,
+): string | undefined {
+  if (dependencyLocationMap.has(name)) {
+    return dependencyLocationMap.get(name);
+  }
+  try {
+    const result = shell
+      .exec(`npm ls ${name} --parseable --prefix ${rootPath}`, {
+        silent: true,
+      })
+      .toString();
+    const path = result.split('\n')[0].trim();
+    dependencyLocationMap.set(name, path);
+    return path;
+  } catch (e) {
+    return undefined;
+  }
+}
