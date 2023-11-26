@@ -1,5 +1,11 @@
 # @ziermann/bundler
 
+## 1.1.2
+
+### Patch Changes
+
+- 1513925: Rename sourceDirectory to projectRoot
+
 ## 1.1.1
 
 ### Patch Changes
