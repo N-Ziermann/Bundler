@@ -3,7 +3,6 @@ src/
 node_modules/
 .turbo/
 dist/
-build/
 
 # dotfiles & config files
 .*
