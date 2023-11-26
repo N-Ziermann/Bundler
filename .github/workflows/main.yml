@@ -6,13 +6,12 @@ on:
 
 jobs:
   publish:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
         with:
-          version: 8
+          version: 8.9.0
       - uses: actions/setup-node@v3
         with:
           node-version: 19.x
