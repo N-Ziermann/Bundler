@@ -3,7 +3,7 @@ type dependencyPath = string;
 
 export type Config = {
   entryPoint: string;
-  sourceDirectory: string;
+  projectRoot: string;
   publicDirectory: string;
   extensions: string[];
   assetExtensions: string[];

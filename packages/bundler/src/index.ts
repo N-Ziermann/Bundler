@@ -29,9 +29,8 @@ todo: asset loading from css imports (import "./index.css")
 // todo: create sample project that uses react & typescript & that imports some css and pngs
 
 const DEFAULT_CONFIG = {
-  entryPoint: 'index.js',
-  // todo: rename into "projectRoot" (most of the time this will just be .)
-  sourceDirectory: 'src',
+  entryPoint: 'src/index.js',
+  projectRoot: '.',
   extensions: ['.js', '.ts'],
   assetExtensions: ['.png'],
   outputDirectory: 'dist',
@@ -71,7 +70,7 @@ export async function main() {
   const config: Config = existsSync(configPath)
     ? { ...DEFAULT_CONFIG, ...JSON.parse(readFileSync(configPath, 'utf-8')) }
     : DEFAULT_CONFIG;
-  const root = join(currentWorkingDirectory, config.sourceDirectory);
+  const root = join(currentWorkingDirectory, config.projectRoot);
   // const nodeModulesPath = join(currentWorkingDirectory, 'node_modules');
 
   if (existsSync(config.outputDirectory)) {

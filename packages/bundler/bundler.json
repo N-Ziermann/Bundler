@@ -1,6 +1,6 @@
 {
   "entryPoint": "src/index.tsx",
-  "sourceDirectory": "../../examples/with-react-esm",
+  "projectRoot": "../../examples/with-react-esm",
   "extensions": [".jsx", ".tsx", ".js", ".ts"],
   "outputDirectory": "dist",
   "assetExtensions": [".png"],

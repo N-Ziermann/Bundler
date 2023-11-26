@@ -1,6 +1,6 @@
 {
   "entryPoint": "src/index.tsx",
-  "sourceDirectory": ".",
+  "projectRoot": ".",
   "extensions": [".jsx", ".tsx", ".js", ".ts"],
   "outputDirectory": "build",
   "assetExtensions": [".png"],
