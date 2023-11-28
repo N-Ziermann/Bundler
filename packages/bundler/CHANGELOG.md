@@ -1,5 +1,11 @@
 # @ziermann/bundler
 
+## 1.2.0
+
+### Minor Changes
+
+- c5b10af: Use loader pattern for asset and css handling
+
 ## 1.1.2
 
 ### Patch Changes
