@@ -6,33 +6,33 @@ import {
   existsSync,
   mkdirSync,
   cpSync,
-  rmdirSync,
+  rmSync,
 } from 'fs';
 import { Worker } from 'worker_threads';
 import shell from 'shelljs';
 import type { Config, ModuleMetadata } from './shared.js';
 import { transformCode } from './worker.js';
+// todo: this is underlined in red, but it still works...
+import { assetLoader } from './assetLoader.js';
+import { cssLoader } from './cssLoader.js';
 
 // todo: general code cleanup
-/*
-todo: asset loading from css imports (import "./index.css")
-  => all imports to the file should be removed during compilation
-    and this should be added to the build:
-
-  const css = readFileSync(...)
-  return `
-    const styleTag = document.createElement("style");
-    styleTag.innerHTML = ${css};
-    document.body.append(styleTag)
-  `
-*/
+// todo: more caching?
+// todo: maybe also handle normal code using a loader
 // todo: create sample project that uses react & typescript & that imports some css and pngs
 
 const DEFAULT_CONFIG = {
   entryPoint: 'src/index.js',
   projectRoot: '.',
   extensions: ['.js', '.ts'],
-  assetExtensions: ['.png'],
+  loaders: {
+    asset: {
+      extensions: ['.png'],
+    },
+    css: {
+      extensions: ['.css'],
+    },
+  },
   outputDirectory: 'dist',
   publicDirectory: 'public',
   babelConfig: {
@@ -71,10 +71,9 @@ export async function main() {
     ? { ...DEFAULT_CONFIG, ...JSON.parse(readFileSync(configPath, 'utf-8')) }
     : DEFAULT_CONFIG;
   const root = join(currentWorkingDirectory, config.projectRoot);
-  // const nodeModulesPath = join(currentWorkingDirectory, 'node_modules');
 
   if (existsSync(config.outputDirectory)) {
-    rmdirSync(config.outputDirectory, { recursive: true });
+    rmSync(config.outputDirectory, { recursive: true });
   }
   mkdirSync(config.outputDirectory, { recursive: true });
 
@@ -96,18 +95,55 @@ export async function main() {
       continue;
     }
     seenModules.add(module);
-    const code = readFileSync(module, 'utf-8');
-    const dependencyMap = getDependencies(module, code);
-    const metadata: ModuleMetadata = {
+    let code = '';
+    let dependencyMap = new Map();
+    const id = moduleCounter++;
+    let metadata: ModuleMetadata = {
       dependencyMap,
       code,
-      id: moduleCounter++,
+      id,
+      requireStatement: '',
     };
+    // todo: turn logic for JS code into loader too and refactor this to be generic
+    if (config.loaders.asset.extensions.some((ex) => module.endsWith(ex))) {
+      const loaderResponse = assetLoader({
+        modulePath: module,
+        config,
+        moduleId: id,
+      });
+      metadata = {
+        dependencyMap: loaderResponse.dependencyMap,
+        code: loaderResponse.moduleCode,
+        id,
+        requireStatement: loaderResponse.requireStatement,
+      };
+    } else if (
+      config.loaders.css.extensions.some((ex) => module.endsWith(ex))
+    ) {
+      const loaderResponse = cssLoader({
+        modulePath: module,
+        config,
+        moduleId: id,
+      });
+      metadata = {
+        dependencyMap: loaderResponse.dependencyMap,
+        code: loaderResponse.moduleCode,
+        id,
+        requireStatement: loaderResponse.requireStatement,
+      };
+    } else {
+      code = readFileSync(module, 'utf-8');
+      dependencyMap = getDependencies(module, code);
+      metadata = {
+        dependencyMap,
+        code,
+        id,
+        requireStatement: `require(${id})`,
+      };
+    }
+
     modules.set(module, metadata);
     [...dependencyMap.keys()].forEach((dep) => {
-      if (config.assetExtensions.some((ex) => dep.endsWith(ex))) {
-        return;
-      }
       const currentPath = join(module, '../');
       return queue.push({
         path: currentPath,
@@ -157,9 +193,6 @@ export async function main() {
           const modulePath = getModulePath(match, currentPath);
           return dependencyMap.set(match, modulePath);
         }
-        if (config.assetExtensions.some((ex) => match.endsWith(ex))) {
-          return dependencyMap.set(match, join(currentPath, match));
-        }
         return dependencyMap.set(
           match,
           join(
@@ -184,7 +217,10 @@ export async function main() {
     const isNodeModule = !isRelativePath(importPath);
     if (
       isNodeModule ||
-      extensions.some((extension) => importPath.endsWith(extension))
+      extensions.some((extension) => importPath.endsWith(extension)) ||
+      Object.values(config.loaders).some((loader) =>
+        loader.extensions.some((extension) => importPath.endsWith(extension)),
+      )
     ) {
       return importPath;
     }

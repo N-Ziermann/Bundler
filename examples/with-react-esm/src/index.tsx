@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import React from 'react';
 import { MyComp } from './MyComp';
+import './test.css';
 
 console.log(1);
 const container = document.getElementById('root');

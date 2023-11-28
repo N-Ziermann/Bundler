@@ -3,7 +3,14 @@
   "projectRoot": ".",
   "extensions": [".jsx", ".tsx", ".js", ".ts"],
   "outputDirectory": "build",
-  "assetExtensions": [".png"],
+  "loaders": {
+    "asset": {
+      "extensions": [".png"]
+    },
+    "css": {
+      "extensions": [".css"]
+    }
+  },
   "babelConfig": {
     "presets": [
       "@babel/preset-react",

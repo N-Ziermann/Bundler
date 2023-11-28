@@ -3,7 +3,14 @@
   "projectRoot": "../../examples/with-react-esm",
   "extensions": [".jsx", ".tsx", ".js", ".ts"],
   "outputDirectory": "dist",
-  "assetExtensions": [".png"],
+  "loaders": {
+    "asset": {
+      "extensions": [".png"]
+    },
+    "css": {
+      "extensions": [".css"]
+    }
+  },
   "babelConfig": {
     "presets": [
       "@babel/preset-react",
