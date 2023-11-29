@@ -1,6 +1,6 @@
 # Bundler
 
-![npm](https://img.shields.io/npm/dt/%40ziermann/bundler?logo=npm&label&color=333&link=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2F%40ziermann%2Fbundler)
+[![npm](https://img.shields.io/npm/dt/%40ziermann/bundler?logo=npm&label&color=333&link=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2F%40ziermann%2Fbundler)](https://www.npmjs.com/package/@ziermann/bundler)
 
 This is a personal project I built to better understand how bundlers work.
 
