@@ -1,6 +1,6 @@
 {
   "name": "@ziermann/bundler",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Self written JavaScript bundler",
   "type": "module",
   "bin": "cli.js",

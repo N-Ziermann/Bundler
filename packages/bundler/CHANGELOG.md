@@ -1,5 +1,11 @@
 # @ziermann/bundler
 
+## 1.2.1
+
+### Patch Changes
+
+- 46df927: Use loader pattern for normal code as well + refactoring
+
 ## 1.2.0
 
 ### Minor Changes
