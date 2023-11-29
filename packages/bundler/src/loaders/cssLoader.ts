@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { v4 } from 'uuid';
 import { join } from 'path';
-import type { LoaderContract } from './shared.js';
+import type { LoaderContract } from '../shared.js';
 
 const cssMap = new Map<string, string>();
 

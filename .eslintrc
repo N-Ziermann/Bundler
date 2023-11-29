@@ -16,6 +16,7 @@
     "@typescript-eslint/no-explicit-any": "warn",
     "no-use-before-define": "off",
     "no-continue": "off",
+    "import/no-unresolved": "off",
     "function-paren-newline": "off",
     "implicit-arrow-linebreak": "off",
     "no-restricted-syntax": "off",

@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { v4 } from 'uuid';
-import type { LoaderContract } from './shared.js';
+import type { LoaderContract } from '../shared.js';
 
 const assetMap = new Map<string, string>();
 

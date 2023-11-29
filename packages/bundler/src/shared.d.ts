@@ -34,10 +34,33 @@ export type LoaderContract = {
     modulePath: string;
     config: Config;
     moduleId: number;
+    projectRoot: string;
   };
   response: {
     requireStatement: string;
     moduleCode: string;
     dependencyMap: Map<string, string>;
   };
+};
+
+export type TypeSpecificExportImportEntry = {
+  'node-addons'?: string | null;
+  node?: string | null;
+  deno?: string | null;
+  worker?: string | null;
+  browser?: string | null;
+  import?: string | null;
+  require?: string | null;
+  development?: string | null;
+  production?: string | null;
+  default?: string | null;
+};
+
+export type ExportEntry =
+  | string
+  | { [key: string]: null | string | TypeSpecificExportImportEntry };
+
+export type PackageJsonContent = {
+  main?: string;
+  exports?: ExportEntry;
 };
