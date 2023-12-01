@@ -5,10 +5,10 @@
       "dependsOn": ["@ziermann/bundler#build"]
     },
     "@ziermann/bundler#build": {
-      "outputs": ["build"]
+      "outputs": ["build/**"]
     },
     "with-react-esm#build": {
-      "outputs": ["build"],
+      "outputs": ["build/**"],
       "dependsOn": ["@ziermann/bundler#build"]
     },
     "lint": {}
