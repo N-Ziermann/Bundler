@@ -1,6 +1,7 @@
 # Bundler
 
 [![npm](https://img.shields.io/npm/dt/%40ziermann/bundler?logo=npm&label&color=333&link=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2F%40ziermann%2Fbundler)](https://www.npmjs.com/package/@ziermann/bundler)
+[![Example](https://img.shields.io/badge/Example_Project-%23333?logo=React)](https://bundler-with-react-esm.vercel.app/)
 
 This is a personal project I built to better understand how bundlers work.
 
@@ -30,3 +31,5 @@ If you would like to try it out anyway then you can use this command to try it o
 `npx @ziermann/bundler`
 
 A working bundler.json config for react projects can be found in the examples directory.
+
+And the todo app provided in the examples workspace of this repository can be found [here](https://bundler-with-react-esm.vercel.app/)
