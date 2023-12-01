@@ -1,0 +1,19 @@
+.input {
+  all: unset;
+  background: #666;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  color: #000;
+  border: 1px #222 solid;
+  cursor: text;
+}
+
+.input:hover,
+.input:focus {
+  background: #6a6a6a;
+  border: 1px #999 solid;
+}
+
+.input::placeholder {
+  color: #333;
+}

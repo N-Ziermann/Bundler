@@ -16,9 +16,6 @@ import { getModulePath } from './functions/getModulePath.js';
 import { getLoader } from './loaders/getLoader.js';
 import { DEFAULT_CONFIG } from './defaultConfig.js';
 
-// todo: more caching?
-// todo: create sample project that uses react & typescript & that imports some css and pngs
-
 export async function main() {
   const currentWorkingDirectory = process.cwd();
   const configPath = join(currentWorkingDirectory, 'bundler.json');

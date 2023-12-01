@@ -1,0 +1,13 @@
+.button {
+  all: unset;
+  background: #666;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.button:hover,
+.button:focus {
+  color: #eee;
+  outline: solid;
+}

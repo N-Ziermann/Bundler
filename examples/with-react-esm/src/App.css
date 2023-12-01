@@ -1,0 +1,20 @@
+.app {
+  max-width: 800px;
+  margin: auto;
+}
+
+.header {
+  position: sticky;
+  background-color: #333;
+  top: 0;
+  padding-bottom: 0.5rem;
+}
+
+.title {
+  margin-bottom: 1rem;
+}
+
+.inputs {
+  display: flex;
+  gap: 0.25rem;
+}

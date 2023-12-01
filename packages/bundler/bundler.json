@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "loaders": {
     "asset": {
-      "extensions": [".png"]
+      "extensions": [".png", ".svg"]
     },
     "css": {
       "extensions": [".css"]
