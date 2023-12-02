@@ -12,5 +12,6 @@
       "dependsOn": ["@ziermann/bundler#build"]
     },
     "lint": {}
-  }
+  },
+  "globalDependencies": ["tsconfig.json"]
 }
