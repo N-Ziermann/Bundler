@@ -32,4 +32,4 @@ If you would like to try it out anyway then you can use this command to try it o
 
 A working bundler.json config for react projects can be found in the examples directory.
 
-And the todo app provided in the examples workspace of this repository can be found [here](https://bundler.n-ziermann.com/)
+And the bundled result of that example can be found [here](https://bundler.n-ziermann.com/)
