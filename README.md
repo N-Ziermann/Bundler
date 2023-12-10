@@ -19,7 +19,7 @@ These are some of the features it supports:
 In combination all of these features offer enough functionality to bundle a fully working react site.
 
 Note that this bundler is _not_ meant to be especially fast.
-It is specifically written to _not_ use any librariers that abstract away behaviours commonly connected to bundling, like:
+It is specifically written to _not_ use any libraries that abstract away behaviours commonly connected to bundling, like:
 
 - file reading
 - file combination
